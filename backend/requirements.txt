@@ -1,0 +1,10 @@
+fastapi
+fastapi-cache
+pydantic
+pydantic_settings
+uvicorn
+sqlalchemy
+asyncpg
+psycopg2
+alembic
+asyncio
