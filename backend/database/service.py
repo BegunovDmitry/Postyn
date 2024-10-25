@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy import desc, delete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.sql import select
@@ -23,7 +21,10 @@ async def add_post(post: AddedPost):
 
 async def delete_posts(post_id: int | list):
     post_ids = set()
-    post_ids.add(post_id)
+    if type(post_id) == int:
+        post_ids.add(post_id)
+    else:
+        post_ids = set(post_id)
 
     async with async_session:
         stmt = delete(PostSQL).where(PostSQL.id.in_(post_ids))

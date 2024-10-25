@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,6 +11,8 @@ from database.service import get_posts as get_posts_from_db
 from database.service import get_post_by_id as get_post_from_db
 
 from bdCleaner.service import del_overdue_posts
+
+import aioredis
 
 app = FastAPI()
 
@@ -40,6 +44,17 @@ async def delete_posts(post_id: int):
 
 @app.get("/get_posts")
 async def get_posts(shift: int = 0, limit: int = 10):
+    redis = await aioredis.create_redis_pool('redis://localhost')
+    last_deleting = await redis.get('last_deleting_time')
+    if last_deleting:
+        last_deleting = last_deleting.decode("utf-8")
+        last_deleting = datetime.strptime(last_deleting, '%m/%d/%Y %H:%M:%S')
+    if (not(last_deleting) or (last_deleting + timedelta(hours=1)) < datetime.utcnow()):
+        await del_overdue_posts()
+        await redis.set('last_deleting_time', datetime.utcnow().strftime('%m/%d/%Y %H:%M:%S'))
+        print("Overdue post deleted!")
+    redis.close()
+
     posts = await get_posts_from_db(shift, limit)
     return posts
 
@@ -47,10 +62,6 @@ async def get_posts(shift: int = 0, limit: int = 10):
 async def get_post_by_id(post_id: int):
     post = await get_post_from_db(post_id)
     return post
-
-@app.delete("/del_overdue_posts")
-async def del_overdue():
-    await del_overdue_posts()
 
 
 
