@@ -1,5 +1,5 @@
 fastapi
-fastapi-cache
+fastapi-cache2[redis]
 pydantic
 pydantic_settings
 uvicorn

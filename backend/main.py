@@ -14,7 +14,24 @@ from bdCleaner.service import del_overdue_posts
 
 import aioredis
 
-app = FastAPI()
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    redis = await aioredis.create_redis_pool('redis://localhost')
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+@cache()
+async def get_cache():
+    return 1
 
 origins = [
     "http://localhost:5173",
@@ -59,6 +76,7 @@ async def get_posts(shift: int = 0, limit: int = 10):
     return posts
 
 @app.get("/get_post_by_id/")
+@cache(expire=60)
 async def get_post_by_id(post_id: int):
     post = await get_post_from_db(post_id)
     return post
